@@ -228,15 +228,6 @@ Our NestJS + PostgreSQL stack **is** the EHR — we do not use third-party EHR s
 
 ---
 
-## People
-
-| Role | |
-|---|---|
-| Founder & Product | Naval Thakur |
-| Clinical Director | Dr. Meera Thakur, BHMS — 15+ years of homeopathic practice |
-
----
-
 ## Contact
 
 **Clinic** — Kharadi, Pune, Maharashtra, India  
