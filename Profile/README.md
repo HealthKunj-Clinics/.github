@@ -32,6 +32,8 @@ The codebase spans seven interconnected products, all served by a single backend
 | [`HealthKunj-Case-forms`](https://github.com/HealthKunj-Clinics/HealthKunj-Case-forms) | Structured clinical intake forms per condition | Vite · React · Express | Firebase Hosting |
 | [`HealthKunj-Apps`](https://github.com/HealthKunj-Clinics/HealthKunj-Apps) | Kunjis (health calculators) + HoSTs (suitability tests) | Vite · React · Gemini AI | Firebase Hosting |
 | [`healthkunj-digital`](https://github.com/HealthKunj-Clinics/healthkunj-digital) | Digital command dashboards + 88 n8n automation workflows | React · n8n | Active |
+| [`HealthKunj-Platforms`](https://github.com/HealthKunj-Clinics/HealthKunj-Platforms) | IT/platform branch — SaaS multi-tenancy + ABDM for other AYUSH clinics | NestJS | Scaffolded |
+| [`HealthKunj-Academy`](https://github.com/HealthKunj-Clinics/HealthKunj-Academy) | Courses + academic initiatives | Next.js | Scaffolded |
 
 ---
 
@@ -224,7 +226,8 @@ Our NestJS + PostgreSQL stack **is** the EHR — we do not use third-party EHR s
 | Health calculators + suitability tests | Live |
 | 88 n8n automation workflows | Staging — deploying to production |
 | Corporate wellness module | Feature-flagged, ready for first client |
-| SaaS multi-tenant platform | Feature-flagged, ready for pilot |
+| SaaS multi-tenant platform | Feature-flagged in `Healthkunj-Api`; `HealthKunj-Platforms` scaffolded as its future home, migration not started |
+| HealthKunj Academy | Scaffolded — product architecture TBD |
 
 ---
 
