@@ -68,8 +68,14 @@ and passing QA is a separate event from being deployed to production.
 | `HealthKunj-Apps` | none — Firebase Hosting only | push to `main` |
 | `HealthKunj-Mobile` | none — no CI/CD configured yet | n/a (not store-submitted) |
 | `healthkunj-digital` | n/a — dashboards/automation, not a deployed product surface | — |
-| `HealthKunj-Platforms` | Cloud Run QA service (scaffolded) | `workflow_dispatch` |
-| `HealthKunj-Academy` | Cloud Run QA service (scaffolded) | `workflow_dispatch` |
+| `HealthKunj-Platforms` | none — **production-only by decision** (QA later); prod not yet launched | `workflow_dispatch` |
+| `HealthKunj-Academy` | none — **production-only by decision** (QA later) | `workflow_dispatch` |
+
+**Decision (2026-10-18): `HealthKunj-Platforms` and `HealthKunj-Academy` are production-only.**
+Neither runs a QA environment; one will be created later, once there is something worth
+validating outside production. Each still has a manual-dispatch production gate, plus a
+build-and-scan workflow on every push to `main`. This is a deliberate exception to the
+two-environment rule above, not a gap to fix. Don't restore their QA pipelines unprompted.
 
 **Two open gaps, called out honestly rather than implied fixed:**
 - `Healthkunj-Api` and `healthkunj-web` both still deploy straight to production on every merge
