@@ -61,8 +61,8 @@ and passing QA is a separate event from being deployed to production.
 
 | Repo | QA environment | Prod deploy trigger |
 |---|---|---|
-| `Healthkunj-Api` | Cloud Run QA service (`deploy-qa.yml`) | push to `main` *(not yet gated — see below)* |
-| `healthkunj-web` | Cloud Run QA service (`deploy-qa.yml`) | push to `main` *(not yet gated — see below)* |
+| `Healthkunj-Api` | Cloud Run QA service (`deploy-qa.yml`, on push to `qa`) | `workflow_dispatch` (since 2026-10-19) |
+| `healthkunj-web` | Cloud Run QA service (`deploy-qa.yml`, on push to `qa`) | `workflow_dispatch` (since 2026-10-19) |
 | `HealthKunj-Shop` | none — Firebase Hosting only | push to `main` |
 | `HealthKunj-Case-forms` | none — Firebase Hosting only | push to `main` |
 | `HealthKunj-Apps` | none — Firebase Hosting only | push to `main` |
@@ -77,12 +77,12 @@ validating outside production. Each still has a manual-dispatch production gate,
 build-and-scan workflow on every push to `main`. This is a deliberate exception to the
 two-environment rule above, not a gap to fix. Don't restore their QA pipelines unprompted.
 
-**Two open gaps, called out honestly rather than implied fixed:**
-- `Healthkunj-Api` and `healthkunj-web` both still deploy straight to production on every merge
-  to `main` — the manual-dispatch prod gate described above is the target state for all repos
-  but has only been built into the two newest ones (`Platforms`, `Academy`) so far. Retrofitting
-  it onto the five live repos is deliberately being done as its own careful pass, not bundled
-  into whatever change happens to touch them next.
+**Production gate for Api and Web (2026-10-19).** Merging to `main` no longer deploys either
+service. QA deploys on every push to `qa`, and a production release is a deliberate
+`gh workflow run deploy.yml --ref main -f ref=<sha>` for a commit already checked on QA.
+Dependabot auto-merges sync to `qa` and ship to prod with the next release.
+
+**One open gap, called out honestly rather than implied fixed:**
 - Shop, Case-Forms, and Apps have no test environment at all today. For Firebase-hosted SPAs
   the cheap fix is a Firebase Hosting **preview channel** per PR, promoted to the live channel
   only after review — no Cloud Run equivalent needed.
