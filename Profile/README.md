@@ -191,7 +191,7 @@ Testing         Playwright E2E · smoke after every production deploy · full au
 
 ## Multi-Tenant SaaS
 
-`Healthkunj-Api` is built multi-tenant from the ground up: tenant-scoped tables carry a `tenant_id`, every request resolves a tenant context, and SaaS features sit behind the `FF_SAAS_PLATFORM` flag. A query-level tenant-isolation audit is the remaining step before a second clinic is onboarded.
+`Healthkunj-Api` is built multi-tenant from the ground up: tenant-scoped tables carry a `tenant_id`, every request resolves a tenant context, and SaaS features sit behind the `FF_SAAS_PLATFORM` flag. A tenant-isolation audit (November 2026) found a short list of gaps, chiefly binding each login to its tenant, to close before a second clinic is onboarded.
 
 **The same platform that runs HealthKunj can run any AYUSH clinic in India** — with their own branding, subdomain, doctor roster, and feature set. This is the foundation for licensing HealthKunj as clinic management infrastructure to homeopathic, Ayurvedic, and Unani practitioners nationally. `HealthKunj-Platforms` is scaffolded as its future home.
 
