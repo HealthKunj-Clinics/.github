@@ -235,4 +235,4 @@ Our NestJS + PostgreSQL stack **is** the EHR — we do not use third-party EHR s
 
 ---
 
-<sub>HealthKunj Clinics Private Limited &nbsp;·&nbsp; "House of Health" &nbsp;·&nbsp; Est. March 2026 &nbsp;·&nbsp; Kharadi, Pune</sub>
+<sub>HealthKunj Clinics Private Limited &nbsp;·&nbsp; "House of Health" &nbsp;·&nbsp; Practising since 2011 · incorporated 14 June 2024 &nbsp;·&nbsp; Kharadi, Pune</sub>
