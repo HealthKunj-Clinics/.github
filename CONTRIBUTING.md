@@ -25,10 +25,10 @@ enforced by the mechanisms below instead. If that ever changes (upgrading to Git
 |---|---|
 | No direct push to `main`/`master` | A `pre-push` git hook, committed to every repo at `.githooks/pre-push` and enabled via `git config core.hooksPath .githooks`, refuses a push whose target ref is `main`/`master` unless `ALLOW_DIRECT_PUSH=1` is set. It's local and bypassable — real friction, not a hard wall — which is the honest ceiling on Free. |
 | Review before merge | A `CODEOWNERS` file in every repo. GitHub auto-requests review from the owner on a PR even without branch protection; still a nudge, not a block, until the org has more than one engineer or upgrades plan. |
-| Required checks pass | Every repo runs a `verify` job (typecheck, lint, unit tests) on every push/PR. Deploy jobs declare `needs: verify` in the workflow file, so **a failing check structurally cannot reach the deploy step** — this part is a real, unbypassable gate, achieved through the GitHub Actions dependency graph rather than a GitHub policy feature. |
+| Required checks pass | Every repo runs a `verify` job (typecheck, lint, build, and unit tests where a repo has them) on PRs. Where a deploy fires automatically, the deploy job declares `needs: verify` in the workflow file, so **a failing check structurally cannot reach the deploy step** — a real, unbypassable gate, achieved through the GitHub Actions dependency graph rather than a GitHub policy feature. Api and Web production deploys are instead manual releases of a commit already verified on its PR and checked on QA (§2). |
 | Secret scanning | The `gitleaks` **CLI** (Apache-2.0, free) run directly as a CI step — not the `gitleaks/gitleaks-action` marketplace wrapper, which now requires a paid license for organization accounts (individual accounts are still free). Fails the build on a detected secret. This exists because `healthkunj-321414` was already suspended once for a leaked credential — the cheapest control on this list, non-negotiable. |
 | SAST | `semgrep` as a CI step (free tier, no GHAS needed) — used instead of CodeQL, which requires GitHub Advanced Security. |
-| Container scanning | `trivy` as a CI step against the built Docker image, before it's pushed to Artifact Registry. |
+| Container scanning | `trivy` as a CI step against the built Docker image, before it's pushed to Artifact Registry. Applies to the Cloud Run repos only; the Firebase SPAs and Mobile ship no container. |
 | Dependency scanning | Dependabot alerts — already enabled org-wide, genuinely free regardless of plan. New dependencies introducing a critical/high vulnerability should block merge by convention; existing backlog needs a separate remediation pass with an explicit SLA, not just a gate on new code (see §5). |
 
 **Review model.** Engineering today is one human (Naval) plus Claude. Classic two-engineer
@@ -43,8 +43,11 @@ every PR forever.
 Three tiers: **local → QA → production.** A change reaches production only after passing QA —
 and passing QA is a separate event from being deployed to production.
 
-- **Push to `main` → `verify` → auto-deploy to QA.** Automatic, no approval needed — QA is
-  meant to be cheap to update.
+- **Cloud Run services (Api, Web): push to `qa` → auto-deploy to QA.** Automatic, no approval
+  needed — QA is meant to be cheap to update. Merging to `main` deploys nothing.
+- **Firebase SPAs: a PR gets a preview channel, merging to `main` deploys to production.** The
+  preview channel is the test environment; review on the preview URL before merging. (Shop has
+  no preview channel yet — see the open gaps below.)
 - **Deploying to production is `workflow_dispatch`-only.** A separate job/workflow that a human
   must manually trigger, picking which QA-validated commit to promote. On Free, GitHub
   Environments' "required reviewers" gate isn't available for private repos — a manual-trigger
@@ -64,10 +67,10 @@ and passing QA is a separate event from being deployed to production.
 | `Healthkunj-Api` | Cloud Run QA service (`deploy-qa.yml`, on push to `qa`) | `workflow_dispatch` (since 2026-10-19) |
 | `healthkunj-web` | Cloud Run QA service (`deploy-qa.yml`, on push to `qa`) | `workflow_dispatch` (since 2026-10-19) |
 | `HealthKunj-Shop` | none — Firebase Hosting only | push to `main` |
-| `HealthKunj-Case-forms` | none — Firebase Hosting only | push to `main` |
-| `HealthKunj-Apps` | none — Firebase Hosting only | push to `main` |
-| `HealthKunj-Mobile` | none — no CI/CD configured yet | n/a (not store-submitted) |
-| `healthkunj-digital` | n/a — dashboards/automation, not a deployed product surface | — |
+| `HealthKunj-Case-forms` | Firebase preview channel per PR (`preview.yml`) | push to `main` (`needs: verify`) |
+| `Healthkunj-Apps` | Firebase preview channel per PR (`preview.yml`) | push to `main` (`needs: verify`) |
+| `HealthKunj-Mobile` | none — `verify.yml` only, no build/release workflow | n/a (not store-submitted) |
+| `healthkunj-digital` | n/a — docs, dashboard and the E2E suite, not a deployed product surface | — |
 | `HealthKunj-Platforms` | none — **production-only by decision** (QA later); prod not yet launched | `workflow_dispatch` |
 | `HealthKunj-Academy` | none — **production-only by decision** (QA later) | `workflow_dispatch` |
 
@@ -83,9 +86,13 @@ service. QA deploys on every push to `qa`, and a production release is a deliber
 Dependabot auto-merges sync to `qa` and ship to prod with the next release.
 
 **One open gap, called out honestly rather than implied fixed:**
-- Shop, Case-Forms, and Apps have no test environment at all today. For Firebase-hosted SPAs
-  the cheap fix is a Firebase Hosting **preview channel** per PR, promoted to the live channel
-  only after review — no Cloud Run equivalent needed.
+- Shop has no test environment, and no `verify` job either: every push to `main` goes straight
+  to production. The fix is the same one Apps and Case-forms already use — a `verify.yml`, a
+  Firebase Hosting **preview channel** per PR, and `needs: verify` on the deploy job.
+
+**Testing.** The Playwright E2E suite lives in `healthkunj-digital`. The read-only smoke subset
+runs after every Api/Web production deploy (dispatched from `deploy.yml`) and on changes to the
+tests; the full, mutating suite runs weekly against QA and on manual dispatch.
 
 ## 3. Rollback and traceability
 
@@ -127,19 +134,37 @@ something's wrong.
 
 ## Status
 
-This policy was written 2026-07-18 and describes the target state, not everything enforced
-today. Concretely still open:
+This policy was written 2026-07-18 as a target state. Where each repo actually stands, as of
+2026-11-05:
 
-- [ ] `.githooks/pre-push` not yet added to every repo
-- [ ] `CODEOWNERS` not yet added to every repo
-- [ ] `verify` + gitleaks/semgrep/trivy CI not yet added to the five pre-existing repos
-      (`Healthkunj-Api`, `healthkunj-web`, `HealthKunj-Shop`, `HealthKunj-Case-forms`,
-      `HealthKunj-Apps`) — built into `HealthKunj-Platforms` and `HealthKunj-Academy` from
-      the start
-- [ ] Manual-dispatch production deploy gate not yet added to `Healthkunj-Api` or
-      `healthkunj-web` (both still auto-deploy prod on merge)
-- [ ] No QA/preview-channel environment for Shop, Case-Forms, or Apps
-- [ ] E2E suite's full/mutating run still needs to be pointed at QA instead of production
+| Repo | `pre-push` hook | `CODEOWNERS` | `verify` (gitleaks + semgrep + typecheck) | Deploy `needs: verify` | trivy | Prod deploys tagged |
+|---|---|---|---|---|---|---|
+| `Healthkunj-Api` | ✅ | ✅ | ✅ (+ unit tests, build; no lint) | n/a — manual release | ❌ | ❌ |
+| `healthkunj-web` | ✅ | ✅ | ✅ (+ build; no lint) | n/a — manual release | ❌ | ❌ |
+| `HealthKunj-Shop` | ❌ | ❌ | ❌ | ❌ | n/a | ❌ |
+| `HealthKunj-Case-forms` | ✅ | ✅ | ✅ (+ lint, build) | ✅ | n/a | ❌ |
+| `Healthkunj-Apps` | ✅ | ✅ | ✅ (+ lint, build) | ✅ | n/a | ❌ |
+| `HealthKunj-Mobile` | ❌ | ❌ | ✅ (+ expo-doctor, advisory) | n/a — no release | n/a | n/a |
+| `healthkunj-digital` | ❌ | ❌ | ❌ | n/a | n/a | n/a |
+| `HealthKunj-Platforms` | ✅ | ✅ | ✅ (+ lint, unit tests, build) | ✅ | ✅ | ✅ |
+| `HealthKunj-Academy` | ✅ | ✅ | ✅ (+ lint, build) | ✅ | ✅ | ✅ |
 
-Track these as the implementation backlog; this file should stop describing aspiration and
-start describing reality as each box is checked.
+Done since the policy was written:
+
+- [x] `verify` CI with gitleaks + semgrep added to Api, Web, Case-forms, Apps and Mobile
+- [x] Manual-dispatch production gate for `Healthkunj-Api` and `healthkunj-web` (2026-10-19)
+- [x] Preview-channel test environment for Case-forms and Apps
+- [x] E2E full/mutating run pointed at QA; production gets post-deploy smoke only
+
+Still open:
+
+- [ ] `HealthKunj-Shop`: `verify`, preview channel, `needs: verify`, hook, `CODEOWNERS`
+- [ ] `.githooks/pre-push` and `CODEOWNERS` in `HealthKunj-Mobile` and `healthkunj-digital`
+- [ ] `trivy` image scan in the Api and Web deploy workflows
+- [ ] A working lint step in Api and Web (Api has no eslint config; Web's `next lint` was
+      removed in Next 16 and typescript-eslint doesn't support TS 7 yet)
+- [ ] Git-tag production deploys in Api, Web, Shop, Case-forms and Apps (§3)
+- [ ] Post-deploy smoke failures alert someone, rather than only showing red in Actions (§3)
+
+Keep this table current as boxes get checked; the file should describe reality, not
+aspiration.

@@ -13,7 +13,7 @@
 
 ## Checklist
 
-- [ ] `verify` CI is green (typecheck, lint, unit tests, gitleaks, semgrep, trivy)
-- [ ] Tested against QA, not just locally, if this touches a deployable
+- [ ] `verify` CI is green (whatever the repo runs: typecheck, lint, tests, build, gitleaks, semgrep; trivy on Cloud Run image builds)
+- [ ] Tested on QA (Api, Web) or the PR preview channel (Firebase SPAs), not just locally, if this touches a deployable
 - [ ] No secrets, credentials, or PII committed
 - [ ] Migrations (if any) tested against a QA database copy
